@@ -2,6 +2,7 @@ from veusz.plugins import *
 import lxml.etree as etree
 import numpy as np
 import veusz.embed as veusz
+import os
 
 class ImportPluginExample(ImportPlugin):
  
@@ -12,7 +13,7 @@ class ImportPluginExample(ImportPlugin):
     def __init__(self):
         ImportPlugin.__init__(self)
         self.fields = [
-            ImportFieldCombo("type", items=("Bandstructure", "DOS","xPath"), editable=False, default="Bandstructure"),
+            ImportFieldCombo("type", items=("Bandstructure", "DOS","xPath","Convergence"), editable=False, default="Bandstructure"),
             ImportFieldText("name", descr="Dataset name", default="name"),
             ImportFieldText("xPath", descr="xPath", default="xPath expression"),
             ImportFieldCheck("character", descr="Character of Bandstructure")
@@ -97,7 +98,15 @@ class ImportPluginExample(ImportPlugin):
                     m = tree.xpath("//partialdos[%(i)s]/diagram[%(j)s]/@m"%{'i':i,'j':j})
                     ydata = tree.xpath("//partialdos[%(i)s]/diagram[%(j)s]/point/@dos"%{'i':i,'j':j})
                     datasets.append(ImportDataset1D("dos_atom%(i)s_n%(n)s_l%(l)s_m%(m)s"%{'i':i,'n':n,'l':l,'m':m}, ydata))
-
+        elif params.field_results["type"] == "Convergence":
+            energy = tree.xpath("//conv/@energy")
+            B = tree.xpath("//conv/@B")
+            V = tree.xpath("//conv/@V")
+            pars = tree.xpath("//conv/@parval")
+            datasets.append(ImportDataset1D("B",B))
+            datasets.append(ImportDataset1D("V",V))
+            datasets.append(ImportDataset1D("energy",energy))
+            
 
  
         return datasets
