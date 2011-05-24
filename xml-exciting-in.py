@@ -99,13 +99,28 @@ class ImportPluginExample(ImportPlugin):
                     ydata = tree.xpath("//partialdos[%(i)s]/diagram[%(j)s]/point/@dos"%{'i':i,'j':j})
                     datasets.append(ImportDataset1D("dos_atom%(i)s_n%(n)s_l%(l)s_m%(m)s"%{'i':i,'n':n,'l':l,'m':m}, ydata))
         elif params.field_results["type"] == "Convergence":
-            energy = tree.xpath("//conv/@energy")
-            B = tree.xpath("//conv/@B")
-            V = tree.xpath("//conv/@V")
-            pars = tree.xpath("//conv/@parval")
-            datasets.append(ImportDataset1D("B",B))
-            datasets.append(ImportDataset1D("V",V))
-            datasets.append(ImportDataset1D("energy",energy))
+            pars = ['rgkmax','ngridk','swidth']
+            for par in pars:
+                valstack = []
+                energy = tree.xpath("//conv[@par='%s']/@energy"%par)
+                
+                B = tree.xpath("//conv[@par='%s']/@B"%par)
+                V = tree.xpath("//conv[@par='%s']/@V"%par)
+                val = tree.xpath("//conv[@par='%s']/@parval"%par)
+                
+                i=0
+                for vlues in val:
+                    if len(eval(vlues)[par]) > 1:
+                        valstack.append(float(str(eval(vlues)[par][i]).rstrip()))
+                        if i<3: i+=1
+                        else: i=0
+                    else:
+                        valstack.append(float(str(eval(vlues)[par][0]).rstrip()))
+                     
+                datasets.append(ImportDataset1D("%s_B"%par,B))
+                datasets.append(ImportDataset1D("%s_V"%par,V))
+                datasets.append(ImportDataset1D("%s_energy"%par,energy))
+                datasets.append(ImportDataset1D(par,valstack))
             
 
  
