@@ -112,9 +112,10 @@ class ImportPluginExample(ImportPlugin):
                 for vlues in val:
                     if len(eval(vlues)[par]) > 1:
                         valstack.append(float(str(eval(vlues)[par][i]).rstrip()))
-                        if i<3: i+=1
+                        if i<len(eval(vlues)[par])-1: i+=1
                         else: i=0
                     else:
+                        
                         valstack.append(float(str(eval(vlues)[par][0]).rstrip()))
                      
                 datasets.append(ImportDataset1D("%s_B"%par,B))
