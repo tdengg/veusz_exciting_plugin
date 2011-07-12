@@ -2,6 +2,7 @@ import veusz.plugins as plugins
 import veusz.embed as enb
 import time
 import veusz.plugins.datasetplugin as dataplug
+import numpy as np
 
 class BandPlugin(plugins.ToolsPlugin):
     """Plot bandstructure and character"""
@@ -247,6 +248,124 @@ class DosPlugin(plugins.ToolsPlugin):
             
         time.sleep(1)
 
+class EOSPlugin(plugins.ToolsPlugin):
+    """Plot bandstructure and character"""
 
+    # a tuple of strings building up menu to place plugin on
+    menu = ('EOS',)
+    # unique name for plugin
+    name = 'EOS'
+
+    # name to appear on status tool bar
+    description_short = 'EOS plot'
+    # text to appear in dialog box
+    description_full = 'Equation of states'
+
+    def __init__(self):
+        """Make list of fields."""
+        self.fields = [ 
+            
+            #plugins.FieldWidget("widget", descr="Start from widget",
+            #                    default="/"),
+            #plugins.FieldMarker("markersearch", descr="Search for marker"),
+            #plugins.FieldMarker("markerreplace", descr="Replace with marker"),
+            #plugins.FieldBool("character", descr="Plot character of bands")
+            ]
+
+    def apply(self, interface, fields):
+        """Do the work of the plugin.
+        interface: veusz command line interface object (exporting commands)
+        fields: dict mapping field names to values
+        """
+        self.fields = fields
+        self.hash = []
+        self.fite = []
+        self.lv = []
+        def walkNodes(node, j):
+            """Walk nodes"""
+            
+            if node.name == 'f_'+self.hash[j]: self.xy = 2
+            elif node.name == 'p_'+self.hash[j]: 
+                self.xy = 1
+                node.PlotLine.hide = True
+            elif node.name not in ['p_'+self.hash[j],'f_'+self.hash[j]] and node.name.startswith('f_') or node.name.startswith('p_'): self.xy = 0
+            
+            if node.type == 'setting' and node.settingtype == 'dataset-or-floatlist':
+                if node.name == 'xData':
+                    print self.xy
+                    if self.xy == 1:
+                        node.val = 'V_points_%s'%self.hash[j]
+                    elif self.xy == 2: node.val = self.lv[j]
+                elif node.name == 'yData':
+                    if self.xy == 1:
+                        node.val = 'E_points_%s'%self.hash[j]
+                    elif self.xy == 2: node.val = self.fite[j]
+
+            else:
+                for c in node.children:
+                    walkNodes(c,j)
+        
+        def fitev(par, v, ein):
+    
+            fite = []
+            deltasq = []
+            res = []
+            v0 = par[0]
+            b0 = par[1]
+            db0 = par[2]
+            emin = par[3]
+            i=0
+            while i < len(v):
+                    
+                vov = (v0/v[i])**(2./3.)
+                fite.append(float(emin + 9. * v0 * b0/16. * ((vov - 1.)**3. * db0 + (vov - 1.)**2. * (6. - 4. * vov))))
+                if len(v) == len(ein):
+                    deltasq.append((fite[i] - ein[i])**2.)
+                    res.append(fite[i] - ein[i])
+                #print (emin - ein[i])**2
+                i = i+1
+            return deltasq, fite, res
+    
+        self.datasets = interface.GetDatasets()
+        n=0
+        for set in self.datasets:
+            if set.startswith('V_points'): 
+                self.hash.append(set.lstrip('V_points'))
+                n+=1
+        
+        
+        g = interface.Root.fromPath('/page1/graph1')
+        
+        self.xy = 0
+        for j in range(n):
+            print n, j
+            try:
+                g.Add('xy', name='p_'+self.hash[j], marker = 'circle')
+                g.Add('xy', name='f_'+self.hash[j], marker = 'none')
+            except:
+                print 'Plot exists!'
+            V_points = interface.GetData('V_points_%s'%self.hash[j])[0]
+            E_points = interface.GetData('E_points_%s'%self.hash[j])[0]
+            
+            B = interface.GetData('B_%s'%self.hash[j])[0][0]/(2.942104*10**4.)
+            V = interface.GetData('V_%s'%self.hash[j])[0][0]
+            E = interface.GetData('E_%s'%self.hash[j])[0][0]
+            dB = interface.GetData('dB_%s'%self.hash[j])[0][0]
+            g['x'].label.val = 'Volume in Bohr^3'
+            g['y'].label.val = 'Energy in Hartree'
+            par = [V,B,dB,E]
+            self.lv.append(np.linspace(min(V_points),max(V_points),100))
+            delta, fite, res = fitev(par, self.lv[j], E_points)
+            self.fite.append(fite)
+            print self.fite
+            for child in g.children:
+                walkNodes(child, j)
+            #print min(energy[0])
+            #g['x'].min.val = str(min(energy[0]))
+            #g['x'].max.val = str(max(energy[0]))
+            #g['xy1'].PlotLine.hide.val = True
+        time.sleep(1)
+
+plugins.toolspluginregistry.append(EOSPlugin)
 plugins.toolspluginregistry.append(BandPlugin)
 plugins.toolspluginregistry.append(DosPlugin)

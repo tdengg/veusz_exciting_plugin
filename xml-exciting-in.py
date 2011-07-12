@@ -3,6 +3,7 @@ import lxml.etree as etree
 import numpy as np
 import veusz.embed as veusz
 import os
+import numpy as np
 
 class ImportPluginExample(ImportPlugin):
  
@@ -13,7 +14,7 @@ class ImportPluginExample(ImportPlugin):
     def __init__(self):
         ImportPlugin.__init__(self)
         self.fields = [
-            ImportFieldCombo("type", items=("Bandstructure", "DOS","xPath","Convergence"), editable=False, default="Bandstructure"),
+            ImportFieldCombo("type", items=("Bandstructure", "DOS","xPath","Convergence","EOS"), editable=False, default="Bandstructure"),
             ImportFieldText("name", descr="Dataset name", default="name"),
             ImportFieldText("xPath", descr="xPath", default="xPath expression"),
             ImportFieldCheck("character", descr="Character of Bandstructure")
@@ -122,8 +123,25 @@ class ImportPluginExample(ImportPlugin):
                 datasets.append(ImportDataset1D("%s_V"%par,V))
                 datasets.append(ImportDataset1D("%s_energy"%par,energy))
                 datasets.append(ImportDataset1D(par,valstack))
+        elif params.field_results["type"] == "EOS":
+            hash = str(np.random.random_integers(9999))
             
-
+            energy = tree.xpath("//graph[last()]/@min_energy")
+            B = tree.xpath("//graph[last()]/@bulk_mod")
+            V = tree.xpath("//graph[last()]/@equi_volume")
+            dB = tree.xpath("//graph[last()]/@d_bulk_mod")
+            
+            V_points = tree.xpath("//graph[last()]/point/@volume")
+            E_points = tree.xpath("//graph[last()]/point/@totalEnergy")
+            
+            
+            datasets.append(ImportDataset1D("B_%s"%hash,B))
+            datasets.append(ImportDataset1D("V_%s"%hash,V))
+            datasets.append(ImportDataset1D("E_%s"%hash,energy))
+            datasets.append(ImportDataset1D("dB_%s"%hash,dB))
+            
+            datasets.append(ImportDataset1D("V_points_%s"%hash,V_points))
+            datasets.append(ImportDataset1D("E_points_%s"%hash,E_points))
  
         return datasets
  
