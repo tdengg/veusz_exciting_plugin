@@ -292,7 +292,7 @@ class EOSPlugin(plugins.ToolsPlugin):
             
             if node.type == 'setting' and node.settingtype == 'dataset-or-floatlist':
                 if node.name == 'xData':
-                    print self.xy
+                    
                     if self.xy == 1:
                         node.val = 'V_points_%s'%self.hash[j]
                     elif self.xy == 2: node.val = self.lv[j]
@@ -338,7 +338,7 @@ class EOSPlugin(plugins.ToolsPlugin):
         
         self.xy = 0
         for j in range(n):
-            print n, j
+            
             try:
                 g.Add('xy', name='p_'+self.hash[j], marker = 'circle')
                 g.Add('xy', name='f_'+self.hash[j], marker = 'none')
@@ -357,7 +357,7 @@ class EOSPlugin(plugins.ToolsPlugin):
             self.lv.append(np.linspace(min(V_points),max(V_points),100))
             delta, fite, res = fitev(par, self.lv[j], E_points)
             self.fite.append(fite)
-            print self.fite
+            
             for child in g.children:
                 walkNodes(child, j)
             #print min(energy[0])
